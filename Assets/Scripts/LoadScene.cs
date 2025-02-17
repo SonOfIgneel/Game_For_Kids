@@ -6,4 +6,6 @@ public class LoadScene : ScriptableObject
 {
     public List<string> assignedcards;
     public List<Vector3> assignedcardspos;
+    public int value, total;
+    public int attempts, score;
 }

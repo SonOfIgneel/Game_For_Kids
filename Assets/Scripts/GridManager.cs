@@ -14,28 +14,32 @@ public class GridManager : MonoBehaviour
     public int rows, cols;
     public List<string> categories;
     public List<Sprite> card_images;
+    public List<string> categories1;
+    public List<Sprite> card_images1;
+    public List<string> categories2;
+    public List<Sprite> card_images2;
     public List<GameObject> entire_cards;
     public List<string> assignedCategories = new List<string>();
     public Sprite default_sprite;
-    public TextMeshProUGUI score, attempts, highscore;
+    public TextMeshProUGUI score, attempts, highscore, congrats;
     public int score_int, attempts_int, click;
     public GameObject first, second;
-    public int total;
+    public int total, value;
     public GameObject mainmenu, gameplay;
     public LoadScene load;
-    public TMP_Dropdown layout;
+    public TMP_Dropdown layout, category;
+    public AudioClip flip, match, missmatch, gameover;
+    public AudioSource audio;
 
-    private void OnEnable()
+
+    public void SetupGrid()
     {
         score_int = 0;
         attempts_int = 0;
         score.text = "Score: " + score_int;
         attempts.text = "Score: " + attempts_int;
         highscore.text = "High Score: " + PlayerPrefs.GetInt("Highest") + "";
-    }
-
-    public void SetupGrid()
-    {
+        total = 0;
         entire_cards = new List<GameObject>();
         gameplay.SetActive(true);
         mainmenu.SetActive(false);
@@ -50,6 +54,19 @@ public class GridManager : MonoBehaviour
         else if (layout.value == 2)
         {
             rows = 2; cols = 5;
+        }
+
+        if (category.value == 0)
+        {
+            categories = categories1;
+            card_images = card_images1;
+            value = 0;
+        }
+        else if (category.value == 1)
+        {
+            categories = categories2;
+            card_images = card_images2;
+            value = 1;
         }
 
         foreach (Transform child in gridParent)
@@ -100,14 +117,33 @@ public class GridManager : MonoBehaviour
                 buttonComponent.onClick.AddListener(() => OnButtonClick(newButton.name, newButton.GetComponent<Button>()));
             }
         }
+        total = entire_cards.Count / 2;
         Invoke("ShowDefaultImage", 0.5f);
     }
 
     public void LoadLevel()
     {
+        score_int = 0;
+        attempts_int = 0;
+        score_int = load.score;
+        attempts_int = load.attempts;
+        score.text = "Score: " + score_int;
+        attempts.text = "Score: " + attempts_int;
+        highscore.text = "High Score: " + PlayerPrefs.GetInt("Highest") + "";
+        total = load.total;
         entire_cards = new List<GameObject>();
         gameplay.SetActive(true);
         mainmenu.SetActive(false);
+        if (load.value == 0)
+        {
+            categories = categories1;
+            card_images = card_images1;
+        }
+        else if (load.value == 1)
+        {
+            categories = categories2;
+            card_images = card_images2;
+        }
         foreach (Transform child in gridParent)
         {
             Destroy(child.gameObject);
@@ -138,7 +174,6 @@ public class GridManager : MonoBehaviour
         {
             entire_cards[i].GetComponent<Image>().sprite = default_sprite;
         }
-        total = entire_cards.Count / 2;
     }
 
     private void ShuffleList(List<string> list)
@@ -169,7 +204,8 @@ public class GridManager : MonoBehaviour
     void OnButtonClick(string name, Button btn)
     {
         Debug.Log($"Button clicked! Category: {name}");
-        btn.gameObject.transform.DORotate(new Vector3(0, 180, 0), 1f, RotateMode.Fast).OnUpdate(() =>
+        audio.clip = flip;
+        btn.gameObject.transform.DORotate(new Vector3(0, 180, 0), 0.5f, RotateMode.Fast).OnUpdate(() =>
         {
             float yRotation = btn.gameObject.transform.eulerAngles.y;
 
@@ -190,7 +226,7 @@ public class GridManager : MonoBehaviour
             attempts_int++;
             attempts.text = "Attempts: " + attempts_int;
             second = btn.gameObject;
-            Invoke("check", 2f);
+            Invoke("check", 1f);
         }
     }
 
@@ -199,6 +235,7 @@ public class GridManager : MonoBehaviour
     {
         if (first.name == second.name)
         {
+            audio.clip = match;
             score_int++;
             score.text = "Score: " + score_int;
             first.SetActive(false);
@@ -207,6 +244,7 @@ public class GridManager : MonoBehaviour
             click = 0;
             if(score_int == total)
             {
+                audio.clip = gameover;
                 Debug.Log("Game Finish");
                 if (PlayerPrefs.HasKey("Highest"))
                 {
@@ -221,15 +259,16 @@ public class GridManager : MonoBehaviour
                     PlayerPrefs.SetInt("Highest", attempts_int);
                     highscore.text = "High Score: " + PlayerPrefs.GetInt("Highest");
                 }
-
-                mainmenu.SetActive(true);
-                gameplay.SetActive(false);
+                congrats.gameObject.SetActive(true);
+                congrats.text = "You made it!!";
+                Invoke("GameOver", 1f);
             }
         }
         else
         {
-            first.gameObject.transform.DORotate(new Vector3(0, 0, 0), 1f, RotateMode.Fast);
-            second.gameObject.transform.DORotate(new Vector3(0, 0, 0), 1f, RotateMode.Fast).OnUpdate(() =>
+            audio.clip = missmatch;
+            first.gameObject.transform.DORotate(new Vector3(0, 0, 0), 0.5f, RotateMode.Fast);
+            second.gameObject.transform.DORotate(new Vector3(0, 0, 0), 0.5f, RotateMode.Fast).OnUpdate(() =>
             {
                 float yRotation = second.gameObject.transform.eulerAngles.y;
 
@@ -246,10 +285,17 @@ public class GridManager : MonoBehaviour
                     // Change sprites for both buttons
                 }
             });
-            Invoke("ChangeSprite", 0.25f);
+            Invoke("ChangeSprite", 0.15f);
             click = 0;
         }
     }
+
+     void GameOver()
+     {
+        congrats.gameObject.SetActive(false);
+        mainmenu.SetActive(true);
+        gameplay.SetActive(false);
+     }
 
     void ChangeSprite()
     {
@@ -262,6 +308,10 @@ public class GridManager : MonoBehaviour
     {
         load.assignedcards.Clear();
         load.assignedcardspos.Clear();
+        load.value = value;
+        load.attempts = attempts_int;
+        load.total = total;
+        load.score = score_int;
         for(int i = 0; i < entire_cards.Count; i++)
         {
             if (entire_cards[i].activeSelf)
