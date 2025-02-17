@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
+using DG.Tweening;
 
 public class GridManager : MonoBehaviour
 {
@@ -168,7 +169,17 @@ public class GridManager : MonoBehaviour
     void OnButtonClick(string name, Button btn)
     {
         Debug.Log($"Button clicked! Category: {name}");
-        btn.image.sprite = btn.GetComponent<Card>().myImage;
+        btn.gameObject.transform.DORotate(new Vector3(0, 180, 0), 1f, RotateMode.Fast).OnUpdate(() =>
+        {
+            float yRotation = btn.gameObject.transform.eulerAngles.y;
+
+            if (yRotation >= 85 && yRotation <= 95) 
+            {
+                Debug.Log("Reached 90 degrees");
+                btn.image.sprite = btn.GetComponent<Card>().myImage;
+            }
+        });
+
         click++;
         if (click == 1)
         {
@@ -179,7 +190,7 @@ public class GridManager : MonoBehaviour
             attempts_int++;
             attempts.text = "Attempts: " + attempts_int;
             second = btn.gameObject;
-            Invoke("check", 0.5f);
+            Invoke("check", 2f);
         }
     }
 
@@ -217,11 +228,34 @@ public class GridManager : MonoBehaviour
         }
         else
         {
-            first.GetComponent<Image>().sprite = default_sprite;
-            second.GetComponent<Image>().sprite = default_sprite;
-            first = second = null;
+            first.gameObject.transform.DORotate(new Vector3(0, 0, 0), 1f, RotateMode.Fast);
+            second.gameObject.transform.DORotate(new Vector3(0, 0, 0), 1f, RotateMode.Fast).OnUpdate(() =>
+            {
+                float yRotation = second.gameObject.transform.eulerAngles.y;
+
+                // Normalize rotation to ensure values are between -180 and 180
+                if (yRotation > 180)
+                    yRotation -= 360;
+
+                Debug.Log("Rotation: " + yRotation);
+
+                if (yRotation >= -95 && yRotation <= -85) // When rotation is around -90 degrees
+                {
+                    Debug.Log("Reached -90 degrees");
+
+                    // Change sprites for both buttons
+                }
+            });
+            Invoke("ChangeSprite", 0.25f);
             click = 0;
         }
+    }
+
+    void ChangeSprite()
+    {
+        first.GetComponent<Image>().sprite = default_sprite;
+        second.GetComponent<Image>().sprite = default_sprite;
+        first = second = null;
     }
 
     public void SaveScene()
