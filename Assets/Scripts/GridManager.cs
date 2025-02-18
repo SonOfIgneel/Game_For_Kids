@@ -95,7 +95,7 @@ public class GridManager : MonoBehaviour
         ShuffleList(categoryPairs);
 
         int num_of_card = 0;
-        Vector3 startPosition = gridParent.position;
+        Vector3 startPosition = gridParent.localPosition;
         for (int row = 0; row < rows; row++)
         {
             for (int col = 0; col < cols; col++)
@@ -106,7 +106,8 @@ public class GridManager : MonoBehaviour
 
                 Vector3 buttonPosition = new Vector3(xPos, yPos, startPosition.z);
 
-                GameObject newButton = Instantiate(buttonPrefab, buttonPosition, Quaternion.identity, gridParent);
+                GameObject newButton = Instantiate(buttonPrefab, gridParent);
+                newButton.transform.localPosition = buttonPosition;
                 newButton.name = categoryPairs[num_of_card - 1];
                 entire_cards.Add(newButton);
 
@@ -151,7 +152,8 @@ public class GridManager : MonoBehaviour
 
         for (int i = 0; i < load.assignedcards.Count; i++)
         {
-            GameObject newCard = Instantiate(buttonPrefab, load.assignedcardspos[i], Quaternion.identity, gridParent);
+            GameObject newCard = Instantiate(buttonPrefab, gridParent);
+            newCard.transform.position = load.assignedcardspos[i];
             newCard.name = load.assignedcards[i];
             entire_cards.Add(newCard);
 
